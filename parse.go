@@ -8,8 +8,8 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
-	cricd "github.com/cricd/parser/cricd"
-	cricsheet "github.com/cricd/parser/cricsheet"
+	cricd "github.com/cricd/cricd-go"
+	cricsheet "github.com/cricd/cricsheet"
 	"github.com/howeyc/fsnotify"
 )
 

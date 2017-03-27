@@ -1,3 +1,3 @@
-FROM golang:1.7-onbuild
+FROM golang:1.8-onbuild
 
-EXPOSE 9000
+EXPOSE 4567

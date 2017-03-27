@@ -286,6 +286,7 @@ func main() {
 		log.WithFields(log.Fields{"error": err}).Fatal("Failed to get current working directory")
 	}
 	gamePath := filepath.Join(cwd, gameEnv)
+	log.Infof("Setting gamepath to %s", gamePath)
 
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {

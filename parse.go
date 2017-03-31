@@ -89,7 +89,7 @@ func cricdGetTeams(csts cricsheet.Teams) ([]cricd.Team, error) {
 
 //TODO: Change name and test
 func process(c cricsheet.Event) (cricd.Delivery, error) {
-	var cdd cricd.Delivery
+	cdd := cricd.NewDelivery(nil)
 	allTeams, err := cricdGetTeams(c.Info.Teams)
 	if err != nil {
 		log.WithFields(log.Fields{"error": err}).Error("Failed to get or create teams so exiting")
@@ -305,30 +305,32 @@ func main() {
 						game := cricsheet.Game{}
 						err = game.Read(ev.Name)
 						if err != nil {
-							log.WithFields(log.Fields{"error": err}).Fatal("Failed to get delivery information from file")
+							log.WithFields(log.Fields{"error": err}).Fatal("Failed to get delivery information from file so stopping processing")
+							break
 						}
 
 						// 3. Flatten the game into a slice of events
 						cses, err := game.Flatten()
 						if err != nil {
-							log.WithFields(log.Fields{"error": err}).Error("Failed to get over and ball for delivery")
-							os.Exit(0)
+							log.WithFields(log.Fields{"error": err}).Error("Failed to get over and ball for delivery stopping processing")
+							break
 						}
 
 						// 4. Iterate over each event
 						for _, event := range cses {
 							e, err := process(event)
 							if err != nil {
-								log.WithFields(log.Fields{"error": err}).Error("Failed to process event")
+								log.WithFields(log.Fields{"error": err}).Error("Failed to process event so not processing match")
+								break
 							}
 							ok, err := e.Push()
 							if err != nil {
 								log.WithFields(log.Fields{"error": err}).Error("Failed to push event to Event API")
-								continue
+								break
 							}
 							if !ok {
 								log.Error("Failed to push event to Event API without error")
-								continue
+								break
 							}
 						}
 						// Rename the file
@@ -343,7 +345,6 @@ func main() {
 				}
 
 			case err := <-watcher.Error:
-				//TODO: Fix me with a proper error
 				log.WithFields(log.Fields{"error": err}).Fatal("Error while watching directory")
 
 			}

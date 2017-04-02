@@ -1,3 +1,10 @@
-FROM golang:1.8-onbuild
+FROM alpine:latest
 
-EXPOSE 4567
+
+ADD parser /parser
+
+CMD ["/parser"]
+
+
+
+

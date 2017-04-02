@@ -1,0 +1,3 @@
+[34mINFO[0m[0000] Setting log level to info                    
+[34mINFO[0m[0000] Unable to find env var, using default `/games/`  [34mvalue[0m="GAME_PATH"
+[34mINFO[0m[0000] Setting gamepath to /Users/admin/Code/go/src/github.com/cricd/parser/games 

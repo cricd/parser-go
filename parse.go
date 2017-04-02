@@ -60,7 +60,8 @@ func mustDetermineEventType(delivery *cricsheet.Delivery) string {
 func cricdGetTeams(csts cricsheet.Teams) ([]cricd.Team, error) {
 	var allTeams []cricd.Team
 	for _, cst := range csts {
-		ct := cricd.Team{Name: cst}
+		ct := cricd.NewTeam(nil)
+		ct.Name = cst
 		ok, err := ct.Get()
 		if err != nil {
 			log.WithFields(log.Fields{"error": err}).Error("Failed to get team with error")
@@ -97,7 +98,7 @@ func process(c cricsheet.Event) (cricd.Delivery, error) {
 	}
 
 	// Get all the match info
-	var m cricd.Match
+	m := cricd.NewMatch(nil)
 	m.HomeTeam = allTeams[0]
 	m.AwayTeam = allTeams[1]
 	m.LimitedOvers = c.Info.Overs
@@ -147,7 +148,8 @@ func process(c cricsheet.Event) (cricd.Delivery, error) {
 	// Set all the players
 
 	// Get the striker
-	var striker = cricd.Player{Name: c.Delivery.Batsman}
+	striker := cricd.NewPlayer(nil)
+	striker.Name = c.Delivery.Batsman
 	ok, err = striker.GetOrCreatePlayer()
 	if err != nil {
 		log.WithFields(log.Fields{"error": err}).Error("Failed to get or create striker")
@@ -160,7 +162,8 @@ func process(c cricsheet.Event) (cricd.Delivery, error) {
 	cdd.Batsmen.Striker = striker
 
 	// Get the non-striker
-	var nonStriker = cricd.Player{Name: c.Delivery.NonStriker}
+	nonStriker := cricd.NewPlayer(nil)
+	nonStriker.Name = c.Delivery.NonStriker
 	ok, err = nonStriker.GetOrCreatePlayer()
 	if err != nil {
 		log.WithFields(log.Fields{"error": err}).Error("Failed to get or create nonStriker")
@@ -173,7 +176,8 @@ func process(c cricsheet.Event) (cricd.Delivery, error) {
 	cdd.Batsmen.NonStriker = nonStriker
 
 	// Get the bowler
-	var bowler = cricd.Player{Name: c.Delivery.Bowler}
+	bowler := cricd.NewPlayer(nil)
+	bowler.Name = c.Delivery.Bowler
 	ok, err = bowler.GetOrCreatePlayer()
 	if err != nil {
 		log.WithFields(log.Fields{"error": err}).Error("Failed to get or create bowler")
@@ -197,9 +201,8 @@ func process(c cricsheet.Event) (cricd.Delivery, error) {
 	}
 
 	// Get the fielder
-	var fielder cricd.Player
+	fielder := cricd.NewPlayer(nil)
 	if dType == "runOut" || dType == "stumped" || dType == "caught" {
-
 		if len(c.Delivery.Wicket.Fielders) > 0 {
 			fielder.Name = c.Delivery.Wicket.Fielders[0]
 			ok, err = fielder.GetOrCreatePlayer()
@@ -211,9 +214,6 @@ func process(c cricsheet.Event) (cricd.Delivery, error) {
 				log.Error("Failed to get or create fielder without error")
 				return cricd.Delivery{}, nil
 			}
-			log.Errorf("Got a dismissal that should have a fielder without one")
-			return cricd.Delivery{}, nil
-
 		}
 	} else if dType == "caughtAndBowled" {
 		fielder = bowler
@@ -226,37 +226,37 @@ func process(c cricsheet.Event) (cricd.Delivery, error) {
 }
 
 /*
-// TODO: Tests
-// func processAll(cses []cricsheet.Event) <-chan cricd.Delivery {
-// 	out := make(chan cricd.Delivery, 50)
-// 	go func() {
-// 		for _, event := range cses {
-// 			e, err := process(event)
-// 			if err != nil {
-// 				log.WithFields(log.Fields{"error": err}).Error("Failed to process event")
-// 			}
-// 			out <- e
-// 		}
-// 		close(out)
-// 	}()
-// 	return out
-// }
+//TODO: Tests
+func processAll(cses []cricsheet.Event) <-chan cricd.Delivery {
+	out := make(chan cricd.Delivery, 50)
+	go func() {
+		for _, event := range cses {
+			e, err := process(event)
+			if err != nil {
+				log.WithFields(log.Fields{"error": err}).Error("Failed to process event")
+			}
+			out <- e
+		}
+		close(out)
+	}()
+	return out
+}
 
-// TODO: test
-// func pushAll(in <-chan cricd.Delivery) {
-// 	go func() {
-// 		for e := range in {
-// 			ok, err := e.Push()
-// 			if err != nil {
-// 				log.WithFields(log.Fields{"error": err}).Error("Failed to push event to Event API")
-// 			}
-// 			if !ok {
-// 				log.Error("Failed to push event to Event API without error")
-// 			}
-// 		}
-// 	}()
-// 	return
-// } */
+//TODO: test
+func pushAll(in <-chan cricd.Delivery) {
+	go func() {
+		for e := range in {
+			ok, err := e.Push()
+			if err != nil {
+				log.WithFields(log.Fields{"error": err}).Error("Failed to push event to Event API")
+			}
+			if !ok {
+				log.Error("Failed to push event to Event API without error")
+			}
+		}
+	}()
+	return
+} */
 
 func init() {
 	debug := os.Getenv("DEBUG")
@@ -321,6 +321,10 @@ func main() {
 							e, err := process(event)
 							if err != nil {
 								log.WithFields(log.Fields{"error": err}).Error("Failed to process event so not processing match")
+								break
+							}
+							if (cricd.Delivery{}) == e {
+								log.Error("Failed to process event so not processing match")
 								break
 							}
 							ok, err := e.Push()

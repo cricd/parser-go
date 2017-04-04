@@ -15,8 +15,6 @@ import (
 
 /*
 	TODO:
-		- Create a logging level
-		- ENV var for logging level
 		- Players DOB doesn't work
 		- Players gender doesn't work
 		- Tests
@@ -42,7 +40,6 @@ var cricsheetToCricdMap = map[string]string{
 	"byes":                  "bye",
 }
 
-// TODO: Should this be here as it's doing a translation
 func mustDetermineEventType(delivery *cricsheet.Delivery) string {
 	if delivery.Wicket.Kind != "" {
 		return cricsheetToCricdMap[delivery.Wicket.Kind]
@@ -56,8 +53,8 @@ func mustDetermineEventType(delivery *cricsheet.Delivery) string {
 	return "delivery"
 }
 
-// TODO: ChangeName and implement properly
-func cricdGetTeams(csts cricsheet.Teams) ([]cricd.Team, error) {
+// Translateteams takes cricsheet teams and turns them into cricd teams
+func translateTeams(csts cricsheet.Teams) ([]cricd.Team, error) {
 	var allTeams []cricd.Team
 	for _, cst := range csts {
 		ct := cricd.NewTeam(nil)
@@ -88,10 +85,10 @@ func cricdGetTeams(csts cricsheet.Teams) ([]cricd.Team, error) {
 	return allTeams, nil
 }
 
-//TODO: Change name and test
-func process(c cricsheet.Event) (cricd.Delivery, error) {
+//Translate event turns a cricsheet event in to a cricd delivery
+func translateEvent(c cricsheet.Event) (cricd.Delivery, error) {
 	cdd := cricd.NewDelivery(nil)
-	allTeams, err := cricdGetTeams(c.Info.Teams)
+	allTeams, err := translateTeams(c.Info.Teams)
 	if err != nil {
 		log.WithFields(log.Fields{"error": err}).Error("Failed to get or create teams so exiting")
 		return cricd.Delivery{}, err
@@ -218,7 +215,8 @@ func process(c cricsheet.Event) (cricd.Delivery, error) {
 	} else if dType == "caughtAndBowled" {
 		fielder = bowler
 	}
-	if (cricd.Player{}) != fielder {
+	// TODO: Find a better way of checking an empty fielder
+	if fielder.ID != 0 {
 		cdd.Fielder = &fielder
 	}
 
@@ -318,13 +316,13 @@ func main() {
 
 						// 4. Iterate over each event
 						for _, event := range cses {
-							e, err := process(event)
+							e, err := translateEvent(event)
 							if err != nil {
-								log.WithFields(log.Fields{"error": err}).Error("Failed to process event so not processing match")
+								log.WithFields(log.Fields{"error": err}).Error("Failed to translate event so not processing match")
 								break
 							}
 							if (cricd.Delivery{}) == e {
-								log.Error("Failed to process event so not processing match")
+								log.Error("Failed to translate event so not processing match")
 								break
 							}
 							ok, err := e.Push()

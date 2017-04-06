@@ -10,7 +10,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	cricd "github.com/cricd/cricd-go"
 	cricsheet "github.com/cricd/cricsheet"
-	"github.com/howeyc/fsnotify"
+	"github.com/fsnotify/fsnotify"
 )
 
 /*
@@ -290,12 +290,13 @@ func main() {
 	if err != nil {
 		log.WithFields(log.Fields{"error": err}).Fatal("Failed to start file watcher")
 	}
+	defer watcher.Close()
 	done := make(chan bool)
 	go func() {
 		for {
 			select {
-			case ev := <-watcher.Event:
-				if ev.IsCreate() {
+			case ev := <-watcher.Events:
+				if ev.Op&fsnotify.Create == fsnotify.Create {
 					// Check if it's a YAML file
 					if strings.HasSuffix(ev.Name, ".yaml") {
 						log.WithFields(log.Fields{"fileName": ev.Name}).Info("Found file with .YAML suffix to process")
@@ -346,18 +347,17 @@ func main() {
 
 				}
 
-			case err := <-watcher.Error:
+			case err := <-watcher.Errors:
 				log.WithFields(log.Fields{"error": err}).Fatal("Error while watching directory")
 
 			}
 		}
 	}()
-	err = watcher.Watch(gamePath)
+	err = watcher.Add(gamePath)
 	if err != nil {
 		log.WithFields(log.Fields{"error": err}).Fatal("Failed to watch directory")
 		os.Exit(1)
 	}
 	<-done
 
-	watcher.Close()
 }

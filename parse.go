@@ -1,6 +1,7 @@
 package main
 
 import (
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -10,7 +11,6 @@ import (
 	log "github.com/Sirupsen/logrus"
 	cricd "github.com/cricd/cricd-go"
 	cricsheet "github.com/cricd/cricsheet"
-	"github.com/fsnotify/fsnotify"
 )
 
 /*
@@ -286,78 +286,63 @@ func main() {
 	gamePath := filepath.Join(cwd, gameEnv)
 	log.Infof("Setting gamepath to %s", gamePath)
 
-	watcher, err := fsnotify.NewWatcher()
-	if err != nil {
-		log.WithFields(log.Fields{"error": err}).Fatal("Failed to start file watcher")
-	}
-	defer watcher.Close()
-	done := make(chan bool)
-	go func() {
-		for {
-			select {
-			case ev := <-watcher.Events:
-				if ev.Op&fsnotify.Create == fsnotify.Create {
-					// Check if it's a YAML file
-					if strings.HasSuffix(ev.Name, ".yaml") {
-						log.WithFields(log.Fields{"fileName": ev.Name}).Info("Found file with .YAML suffix to process")
-						// 2. Parse the file in to a cricsheet.Game that holds all the events
-						game := cricsheet.Game{}
-						err = game.Read(ev.Name)
-						if err != nil {
-							log.WithFields(log.Fields{"error": err}).Fatal("Failed to get delivery information from file so stopping processing")
-							break
-						}
-
-						// 3. Flatten the game into a slice of events
-						cses, err := game.Flatten()
-						if err != nil {
-							log.WithFields(log.Fields{"error": err}).Error("Failed to get over and ball for delivery stopping processing")
-							break
-						}
-
-						// 4. Iterate over each event
-						for _, event := range cses {
-							e, err := translateEvent(event)
-							if err != nil {
-								log.WithFields(log.Fields{"error": err}).Error("Failed to translate event so not processing match")
-								break
-							}
-							if (cricd.Delivery{}) == e {
-								log.Error("Failed to translate event so not processing match")
-								break
-							}
-							ok, err := e.Push()
-							if err != nil {
-								log.WithFields(log.Fields{"error": err}).Error("Failed to push event to Event API")
-								break
-							}
-							if !ok {
-								log.Error("Failed to push event to Event API without error")
-								break
-							}
-						}
-						// Rename the file
-						log.WithFields(log.Fields{"fileName": ev.Name}).Info("Removing file")
-						err = os.Remove(ev.Name)
-						if err != nil {
-							log.WithFields(log.Fields{"error": err}).Error("Failed to remove file")
-						}
-						log.Infof("Successfully processed file %s", ev.Name)
+	tick := time.NewTicker(5 * time.Second)
+	for {
+		select {
+		case <-tick.C:
+			log.Info("Did not find any files needed for processing, will try again 5s")
+			files, err := ioutil.ReadDir(gamePath)
+			if err != nil {
+				log.WithFields(log.Fields{"error": err}).Fatal("Failed to read files in game path")
+				break
+			}
+			for _, file := range files {
+				gameFile := filepath.Join(gamePath, file.Name())
+				// Check if it's a YAML file
+				if strings.HasSuffix(file.Name(), ".yaml") {
+					log.WithFields(log.Fields{"fileName": file.Name()}).Info("Found file with .YAML suffix to process")
+					// 2. Parse the file in to a cricsheet.Game that holds all the events
+					game := cricsheet.Game{}
+					err = game.Read(gameFile)
+					if err != nil {
+						log.WithFields(log.Fields{"error": err}).Fatal("Failed to get delivery information from file so stopping processing")
+						break
+					}
+					cses, err := game.Flatten()
+					if err != nil {
+						log.WithFields(log.Fields{"error": err}).Error("Failed to get over and ball for delivery stopping processing")
+						break
 					}
 
+					for _, event := range cses {
+						e, err := translateEvent(event)
+						if err != nil {
+							log.WithFields(log.Fields{"error": err}).Error("Failed to translate event so not processing match")
+							break
+						}
+						if (cricd.Delivery{}) == e {
+							log.Error("Failed to translate event so not processing match")
+							break
+						}
+						ok, err := e.Push()
+						if err != nil {
+							log.WithFields(log.Fields{"error": err}).Error("Failed to push event to Event API")
+							break
+						}
+						if !ok {
+							log.Error("Failed to push event to Event API without error")
+							break
+						}
+					}
+					// Rename the file
+					log.WithFields(log.Fields{"fileName": file.Name()}).Info("Removing file")
+					err = os.Remove(gameFile)
+					if err != nil {
+						log.WithFields(log.Fields{"error": err}).Error("Failed to remove file")
+					}
+					log.Infof("Successfully processed file %s", file.Name())
 				}
-
-			case err := <-watcher.Errors:
-				log.WithFields(log.Fields{"error": err}).Fatal("Error while watching directory")
-
 			}
 		}
-	}()
-	err = watcher.Add(gamePath)
-	if err != nil {
-		log.WithFields(log.Fields{"error": err}).Fatal("Failed to watch directory")
-		os.Exit(1)
 	}
-	<-done
-
 }

@@ -297,6 +297,7 @@ func main() {
 				break
 			}
 			for _, file := range files {
+				log.Infof("Found %d files in game directory", len(files))
 				gameFile := filepath.Join(gamePath, file.Name())
 				// Check if it's a YAML file
 				if strings.HasSuffix(file.Name(), ".yaml") {

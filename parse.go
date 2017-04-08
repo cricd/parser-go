@@ -199,6 +199,7 @@ func translateEvent(c cricsheet.Event) (cricd.Delivery, error) {
 
 	// Get the fielder
 	fielder := cricd.NewPlayer(nil)
+	dismissed := cricd.NewPlayer(nil)
 	if dType == "runOut" || dType == "stumped" || dType == "caught" {
 		if len(c.Delivery.Wicket.Fielders) > 0 {
 			fielder.Name = c.Delivery.Wicket.Fielders[0]
@@ -212,12 +213,28 @@ func translateEvent(c cricsheet.Event) (cricd.Delivery, error) {
 				return cricd.Delivery{}, nil
 			}
 		}
+		if dType == "runOut" {
+			dismissed.Name = c.Delivery.Wicket.PlayerOut
+			ok, err = dismissed.GetOrCreatePlayer()
+			if err != nil {
+				log.WithFields(log.Fields{"error": err}).Error("Failed to get or create dismissed player")
+				return cricd.Delivery{}, err
+			}
+			if !ok {
+				log.Error("Failed to get or create dismissed player without error")
+				return cricd.Delivery{}, nil
+			}
+		}
 	} else if dType == "caughtAndBowled" {
 		fielder = bowler
 	}
 	// TODO: Find a better way of checking an empty fielder
 	if fielder.ID != 0 {
 		cdd.Fielder = &fielder
+	}
+
+	if dismissed.ID != 0 {
+		cdd.Batsman = &dismissed
 	}
 
 	return cdd, nil

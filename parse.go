@@ -85,7 +85,57 @@ func translateTeams(csts cricsheet.Teams) ([]cricd.Team, error) {
 	return allTeams, nil
 }
 
-//Translate event turns a cricsheet event in to a cricd delivery
+// translateNumberOfInnings works out the number of innings in an event based on the event type
+func translateNumberOfInnings(c *cricsheet.Event) (noOfInnings int) {
+	if strings.ToLower(c.Info.MatchType) == "test" {
+		return 2
+	}
+	return 1
+}
+
+func translateStartDate(c *cricsheet.Event) (s time.Time, err error) {
+	date, err := time.Parse(cricd.DateFormat, c.Info.Dates[0]) // Assume the first date is the start
+	if err != nil {
+		log.WithFields(log.Fields{"error": err}).Error("Failed to parse date for event")
+		return time.Time{}, err
+	}
+	return date, nil
+}
+
+func translateFielder(c *cricsheet.Event) (name string) {
+	dType := mustDetermineEventType(&c.Delivery)
+
+	//  If it's a run out/stumped/caught then the fielder will be in the wicket
+	if dType == "runOut" || dType == "stumped" || dType == "caught" {
+		if len(c.Delivery.Wicket.Fielders) > 0 {
+			return c.Delivery.Wicket.Fielders[0]
+		}
+		// If it's caught and bowled the fielder is the bowler
+	} else if dType == "caughtAndBowled" {
+		return c.Delivery.Bowler
+	}
+	return ""
+}
+
+func translateBatsmanOut(c *cricsheet.Event) (name string) {
+	dType := mustDetermineEventType(&c.Delivery)
+	if dType == "runOut" {
+		return c.Delivery.Wicket.PlayerOut
+	}
+	return ""
+}
+
+func translateRuns(c *cricsheet.Event) (runs int) {
+	dType := mustDetermineEventType(&c.Delivery)
+	// Set the runs
+	if dType == "legBye" || dType == "bye" {
+		return c.Delivery.Runs.Extras
+	}
+
+	return c.Delivery.Runs.Batsman
+}
+
+// Translate event turns a cricsheet event in to a cricd delivery
 func translateEvent(c cricsheet.Event) (cricd.Delivery, error) {
 	cdd := cricd.NewDelivery(nil)
 	allTeams, err := translateTeams(c.Info.Teams)
@@ -99,13 +149,13 @@ func translateEvent(c cricsheet.Event) (cricd.Delivery, error) {
 	m.HomeTeam = allTeams[0]
 	m.AwayTeam = allTeams[1]
 	m.LimitedOvers = c.Info.Overs
-
-	if strings.ToLower(c.Info.MatchType) == "test" {
-		m.NumberOfInnings = 2
-	} else {
-		m.NumberOfInnings = 1
+	m.NumberOfInnings = translateNumberOfInnings(&c)
+	m.StartDate, err = translateStartDate(&c)
+	if err != nil {
+		log.Infof("Failed to work out startDate, setting it to epoch")
 	}
-	m.StartDate, _ = time.Parse(cricd.DateFormat, c.Info.Dates[0]) // Assume the first date is the start
+
+	// Get Match
 	ok, err := m.Get()
 	if err != nil {
 		log.WithFields(log.Fields{"error": err}).Error("Failed to get match with error")
@@ -123,12 +173,13 @@ func translateEvent(c cricsheet.Event) (cricd.Delivery, error) {
 			return cricd.Delivery{}, err
 		}
 	}
-
 	//  Set the Match ID
 	cdd.MatchID = m.ID
-	// Timestamp
+
+	// Set timestamp
 	cdd.Timestamp = m.StartDate.Format(cricd.DateFormat)
 
+	// Assign teams
 	if c.BattingTeam == allTeams[0].Name {
 		cdd.Ball.BattingTeam = allTeams[0]
 		cdd.Ball.FieldingTeam = allTeams[1]
@@ -137,7 +188,7 @@ func translateEvent(c cricsheet.Event) (cricd.Delivery, error) {
 		cdd.Ball.FieldingTeam = allTeams[0]
 	}
 
-	// Ball and innings info
+	// Set the over, ball and innings info
 	cdd.Ball.Innings = c.InningsNumber
 	cdd.Ball.Over = c.Delivery.Over
 	cdd.Ball.Ball = c.Delivery.Ball
@@ -191,52 +242,46 @@ func translateEvent(c cricsheet.Event) (cricd.Delivery, error) {
 	cdd.EventType = dType
 
 	// Set the runs
-	if dType == "legBye" || dType == "bye" {
-		cdd.Runs = c.Delivery.Runs.Extras
-	} else {
-		cdd.Runs = c.Delivery.Runs.Batsman
-	}
+	cdd.Runs = translateRuns(&c)
 
-	// Get the fielder
+	// Translate Fielder
 	fielder := cricd.NewPlayer(nil)
+	fielderName := translateFielder(&c)
+	if fielderName != "" {
+		fielder.Name = fielderName
+		// Get the fielder now
+		ok, err = fielder.GetOrCreatePlayer()
+		if err != nil {
+			log.WithFields(log.Fields{"error": err}).Error("Failed to get or create fielder")
+			return cricd.Delivery{}, nil
+		}
+		if !ok {
+			log.Error("Failed to get or create fielder without error")
+			return cricd.Delivery{}, nil
+		}
+		if fielder.ID != 0 {
+			cdd.Fielder = &fielder
+		}
+	}
+
+	// Get dismissed batsman
 	dismissed := cricd.NewPlayer(nil)
-	if dType == "runOut" || dType == "stumped" || dType == "caught" {
-		if len(c.Delivery.Wicket.Fielders) > 0 {
-			fielder.Name = c.Delivery.Wicket.Fielders[0]
-			ok, err = fielder.GetOrCreatePlayer()
-			if err != nil {
-				log.WithFields(log.Fields{"error": err}).Error("Failed to get or create fielder")
-				return cricd.Delivery{}, err
-			}
-			if !ok {
-				log.Error("Failed to get or create fielder without error")
-				return cricd.Delivery{}, nil
-			}
+	dismissedName := translateBatsmanOut(&c)
+	if dismissedName != "" {
+		dismissed.Name = dismissedName
+		ok, err = dismissed.GetOrCreatePlayer()
+		if err != nil {
+			log.WithFields(log.Fields{"error": err}).Error("Failed to get or create dismissed player")
+			return cricd.Delivery{}, nil
 		}
-		if dType == "runOut" {
-			dismissed.Name = c.Delivery.Wicket.PlayerOut
-			ok, err = dismissed.GetOrCreatePlayer()
-			if err != nil {
-				log.WithFields(log.Fields{"error": err}).Error("Failed to get or create dismissed player")
-				return cricd.Delivery{}, err
-			}
-			if !ok {
-				log.Error("Failed to get or create dismissed player without error")
-				return cricd.Delivery{}, nil
-			}
+		if !ok {
+			log.Error("Failed to get or create dismissed player without error")
+			return cricd.Delivery{}, nil
 		}
-	} else if dType == "caughtAndBowled" {
-		fielder = bowler
+		if dismissed.ID != 0 {
+			cdd.Batsman = &dismissed
+		}
 	}
-	// TODO: Find a better way of checking an empty fielder
-	if fielder.ID != 0 {
-		cdd.Fielder = &fielder
-	}
-
-	if dismissed.ID != 0 {
-		cdd.Batsman = &dismissed
-	}
-
 	return cdd, nil
 }
 
@@ -314,7 +359,6 @@ func main() {
 				break
 			}
 			for _, file := range files {
-				log.Infof("Found %d files in game directory", len(files))
 				gameFile := filepath.Join(gamePath, file.Name())
 				// Check if it's a YAML file
 				if strings.HasSuffix(file.Name(), ".yaml") {
@@ -326,13 +370,15 @@ func main() {
 						log.WithFields(log.Fields{"error": err}).Fatal("Failed to get delivery information from file so stopping processing")
 						break
 					}
+					log.Info("Flattening game")
 					cses, err := game.Flatten()
 					if err != nil {
 						log.WithFields(log.Fields{"error": err}).Error("Failed to get over and ball for delivery stopping processing")
 						break
 					}
-
-					for _, event := range cses {
+					log.Info("Translating events")
+					for k, event := range cses {
+						log.Infof("Translating event %d/%d", k, len(cses)+1)
 						e, err := translateEvent(event)
 						if err != nil {
 							log.WithFields(log.Fields{"error": err}).Error("Failed to translate event so not processing match")

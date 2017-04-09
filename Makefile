@@ -1,4 +1,4 @@
-ARTIFACT = parser 
+ARTIFACT = parse 
 
 all: build
 

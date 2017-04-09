@@ -198,7 +198,7 @@ func translateEvent(c cricsheet.Event) (cricd.Delivery, error) {
 	// Get the striker
 	striker := cricd.NewPlayer(nil)
 	striker.Name = c.Delivery.Batsman
-	ok, err = striker.GetOrCreatePlayer()
+	ok, err = striker.GetOrCreatePlayer(cdd.Ball.BattingTeam.ID)
 	if err != nil {
 		log.WithFields(log.Fields{"error": err}).Error("Failed to get or create striker")
 		return cricd.Delivery{}, err
@@ -212,7 +212,7 @@ func translateEvent(c cricsheet.Event) (cricd.Delivery, error) {
 	// Get the non-striker
 	nonStriker := cricd.NewPlayer(nil)
 	nonStriker.Name = c.Delivery.NonStriker
-	ok, err = nonStriker.GetOrCreatePlayer()
+	ok, err = nonStriker.GetOrCreatePlayer(cdd.Ball.BattingTeam.ID)
 	if err != nil {
 		log.WithFields(log.Fields{"error": err}).Error("Failed to get or create nonStriker")
 		return cricd.Delivery{}, err
@@ -226,7 +226,7 @@ func translateEvent(c cricsheet.Event) (cricd.Delivery, error) {
 	// Get the bowler
 	bowler := cricd.NewPlayer(nil)
 	bowler.Name = c.Delivery.Bowler
-	ok, err = bowler.GetOrCreatePlayer()
+	ok, err = bowler.GetOrCreatePlayer(cdd.Ball.FieldingTeam.ID)
 	if err != nil {
 		log.WithFields(log.Fields{"error": err}).Error("Failed to get or create bowler")
 		return cricd.Delivery{}, err
@@ -250,7 +250,7 @@ func translateEvent(c cricsheet.Event) (cricd.Delivery, error) {
 	if fielderName != "" {
 		fielder.Name = fielderName
 		// Get the fielder now
-		ok, err = fielder.GetOrCreatePlayer()
+		ok, err = fielder.GetOrCreatePlayer(cdd.Ball.FieldingTeam.ID)
 		if err != nil {
 			log.WithFields(log.Fields{"error": err}).Error("Failed to get or create fielder")
 			return cricd.Delivery{}, nil
@@ -269,7 +269,7 @@ func translateEvent(c cricsheet.Event) (cricd.Delivery, error) {
 	dismissedName := translateBatsmanOut(&c)
 	if dismissedName != "" {
 		dismissed.Name = dismissedName
-		ok, err = dismissed.GetOrCreatePlayer()
+		ok, err = dismissed.GetOrCreatePlayer(cdd.Ball.BattingTeam.ID)
 		if err != nil {
 			log.WithFields(log.Fields{"error": err}).Error("Failed to get or create dismissed player")
 			return cricd.Delivery{}, nil

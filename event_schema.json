@@ -1,0 +1,275 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "title": "Root schema.",
+  "description": "A schema to validate cricket events",
+  "properties": {
+    "match": {
+      "type": "integer",
+      "title": "Match schema.",
+      "id": "http://ryankscott.com/match",
+      "description": "Identifier for the match"
+    },
+    "eventType": {
+      "type": "string",
+      "title": "EventType schema.",
+      "description": "Validates the type of events that can be sent",
+      "enum": [
+        "delivery",
+        "noBall",
+        "wide",
+        "bye",
+        "legBye",
+        "penaltyRuns",
+        "bowled",
+        "timedOut",
+        "caught",
+        "handledBall",
+        "doubleHit",
+        "hitWicket",
+        "lbw",
+        "obstruction",
+        "runOut",
+        "stumped",
+        "caughtAndBowled"
+      ],
+      "id": "http://ryankscott.com/eventType"
+    },
+    "timestamp": {
+      "type": "string",
+      "title": "Timestamp schema.",
+      "description": "The timestamp when the event occurred as a ISO8601 datetime with timezone",
+      "id": "http://ryankscott.com/timestamp"
+    },
+    "ball": {
+      "type": "object",
+      "title": "Ball schema.",
+      "description": "Describes which ball in the game a match event relates to",
+      "properties": {
+        "battingTeam": {
+          "type": "object",
+          "title": "BattingTeam schema.",
+          "description": "The team who is currently batting",
+          "properties": {
+            "id": {
+              "type": "integer",
+              "title": "BattingTeam Id schema.",
+              "description": "An identifier for the currently batting team",
+              "id": "http://ryankscott.com/ball/battingTeam/id"
+            },
+            "name": {
+              "type": "string",
+              "title": "BattingTeam Name schema.",
+              "description": "The full name of the team batting.",
+              "id": "http://ryankscott.com/ball/battingTeam/name"
+            }
+          },
+          "id": "http://ryankscott.com/ball/battingTeam",
+          "required": [
+            "id",
+            "name"
+          ]
+        },
+        "fieldingTeam": {
+          "type": "object",
+          "title": "FieldingTeam schema.",
+          "description": "The team that is currently fielding.",
+          "properties": {
+            "id": {
+              "type": "integer",
+              "title": "FieldingTeam Id schema.",
+              "description": "An identifier for the currently fielding team.",
+              "id": "http://ryankscott.com/ball/fieldingTeam/id"
+            },
+            "name": {
+              "type": "string",
+              "title": "FieldingTeam Name schema.",
+              "description": "An name for the currently fielding team.",
+              "id": "http://ryankscott.com/ball/fieldingTeam/name"
+            }
+          },
+          "id": "http://ryankscott.com/ball/fieldingTeam",
+          "required": [
+            "id",
+            "name"
+          ]
+        },
+        "innings": {
+          "type": "integer",
+          "title": "Innings schema.",
+          "description": "An identifier for which innings in a match this event relates to",
+          "id": "http://ryankscott.com/ball/innings",
+          "minimum": 1,
+          "maximum": 4
+        },
+        "over": {
+          "type": "integer",
+          "title": "Over schema.",
+          "description": "The over which this match event belongs to.",
+            "id": "http://ryankscott.com/ball/over",
+            "minimum": 0
+        },
+        "ball": {
+          "type": "integer",
+          "title": "Ball schema.",
+          "description": "The ball in the over which this match event belongs to.",
+            "minimum": 0,
+            "maximum": 6,
+            "id": "http://ryankscott.com/ball/ball"
+        }
+      },
+      "id": "http://ryankscott.com/ball",
+      "required": [
+        "battingTeam",
+        "fieldingTeam",
+        "innings",
+        "over",
+        "ball"
+      ]
+    },
+    "runs": {
+      "type": "integer",
+      "title": "Runs schema.",
+      "description": "The number of physical runs taken by the batsman.",
+      "id": "http://ryankscott.com/runs"
+    },
+    "batsmen": {
+      "type": "object",
+      "title": "Batsmen schema.",
+      "description": "Describes the batsman relating to this match event.",
+      "properties": {
+        "striker": {
+          "type": "object",
+          "title": "Striker schema.",
+          "description": "Describes the batsman that is currently facing the match event.",
+          "properties": {
+            "id": {
+              "type": "integer",
+              "title": "Striker Id schema.",
+              "description": "An identifier for the batsman currently on strike.",
+              "id": "http://ryankscott.com/batsmen/striker/id"
+            },
+            "name": {
+              "type": "string",
+              "title": "Striker Name schema.",
+              "description": "The name of the batsman currently on strike.",
+              "id": "http://ryankscott.com/batsmen/striker/name"
+            }
+          },
+          "id": "http://ryankscott.com/batsmen/striker",
+          "required": [
+            "id",
+            "name"
+          ]
+        },
+        "nonStriker": {
+          "type": "object",
+          "title": "NonStriker schema.",
+          "description": "An identifier for the batsman not currently on strike.",
+          "properties": {
+            "id": {
+              "type": "integer",
+              "title": "NonStriker Id schema.",
+              "description": "An identifer for the batsman not currently on strike.",
+              "id": "http://ryankscott.com/batsmen/nonStriker/id"
+            },
+            "name": {
+              "type": "string",
+              "title": "NonStriker Name schema.",
+              "description": "A name for the batsman not currently on strike.",
+              "id": "http://ryankscott.com/batsmen/nonStriker/name"
+            }
+          },
+          "id": "http://ryankscott.com/batsmen/nonStriker",
+          "required": [
+            "id",
+            "name"
+          ]
+        }
+      },
+      "id": "http://ryankscott.com/batsmen",
+      "required": [
+        "striker",
+        "nonStriker"
+      ]
+    },
+    "bowler": {
+      "type": "object",
+      "title": "Bowler schema.",
+      "description": "Describes the bowler of the match event.",
+      "properties": {
+        "id": {
+          "type": "integer",
+          "title": "Bowler Id schema.",
+          "description": "An identifier for the bowler of the match event.",
+          "id": "http://ryankscott.com/bowler/id"
+        },
+        "name": {
+          "type": "string",
+          "title": "Bowler Name schema.",
+          "description": "A name for the bowler of the match event.",
+          "id": "http://ryankscott.com/bowler/name"
+        }
+      },
+      "id": "http://ryankscott.com/bowler",
+      "required": [
+        "id",
+        "name"
+      ]
+    },
+    "fielder": {
+    "type": "object",
+    "title": "Fielder schema.",
+    "description": "Describes the fielder of the match event.",
+    "properties": {
+      "id": {
+        "type": "integer",
+        "title": "Fielder Id schema.",
+        "description": "An identifier for the fielder of the match event.",
+        "id": "http://ryankscott.com/fielder/id"
+      },
+      "name": {
+        "type": "string",
+        "title": "Fielder Name schema.",
+        "description": "A name for the fielder of the match event.",
+        "id": "http://ryankscott.com/fielder/name"
+      }
+    },
+    "id": "http://ryankscott.com/fielder",
+    "required": [
+      "id",
+      "name"
+    ]
+    },
+    "batsman": {
+          "type": "object",
+          "title": "Batsman schema.",
+          "description": "Describes the batsman of the match event.",
+          "properties": {
+              "id": {
+                  "type": "integer",
+                  "title": "Batsman Id schema.",
+                  "description": "An identifier for the batsman of the match event.",
+                  "id": "http://ryankscott.com/batsman/id"
+              },
+              "name": {
+                  "type": "string",
+                  "title": "Batsman Name schema.",
+                  "description": "A name for the batsman of the match event.",
+                  "id": "http://ryankscott.com/batsman/name"
+              }
+          },
+          "id": "http://ryankscott.com/batsman",
+          "required": [
+              "id",
+              "name"
+          ]
+      }
+},
+  "id": "http://ryankscott.com",
+  "required": [
+    "match",
+    "eventType",
+    "timestamp"
+  ]
+}

@@ -2,7 +2,7 @@ ARTIFACT = parser
 
 all: build
 
-build: GOOS ?= linux
+build: GOOS ?= darwin
 build: GOARCH ?= amd64
 build: clean
 		GOOS=${GOOS} GOARCH=${GOARCH} CGO_ENABLED=0 go build -o ${ARTIFACT} -a .

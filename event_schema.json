@@ -114,7 +114,6 @@
           "title": "Ball schema.",
           "description": "The ball in the over which this match event belongs to.",
             "minimum": 0,
-            "maximum": 6,
             "id": "http://ryankscott.com/ball/ball"
         }
       },

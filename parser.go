@@ -23,7 +23,7 @@ import (
 var cricsheetToCricdMap = map[string]string{
 	"bowled":                "bowled",
 	"caught":                "caught",
-	"caught and bowled":     "caughtAndBowled",
+	"caught and bowled":     "caught", // We don't have caught and bowled in cricd
 	"lbw":                   "lbw",
 	"stumped":               "stumped",
 	"run out":               "runOut",
@@ -105,14 +105,18 @@ func translateStartDate(c *cricsheet.Event) (s time.Time, err error) {
 func translateFielder(c *cricsheet.Event) (name string) {
 	dType := mustDetermineEventType(&c.Delivery)
 
-	//  If it's a run out/stumped/caught then the fielder will be in the wicket
-	if dType == "runOut" || dType == "stumped" || dType == "caught" {
+	//  If it's a run out/stumped then the fielder will be in the wicket
+	if dType == "runOut" || dType == "stumped" {
 		if len(c.Delivery.Wicket.Fielders) > 0 {
 			return c.Delivery.Wicket.Fielders[0]
 		}
 		log.Error("Failed to find fielder for event")
-		// If it's caught and bowled the fielder is the bowler
-	} else if dType == "caughtAndBowled" {
+	}
+	// If it's caught (or caught and bowled)
+	if dType == "caught" {
+		if len(c.Delivery.Wicket.Fielders) > 0 {
+			return c.Delivery.Wicket.Fielders[0]
+		}
 		return c.Delivery.Bowler
 	}
 	return ""

@@ -2,9 +2,8 @@ FROM alpine:latest
 
 
 ADD parser /parser
-COPY event_schema.json /parser
-RUN chmod 0700 /parser 
-
+ADD event_schema.json /
+RUN ["chmod", "777" ,"/event_schema.json"]
 
 CMD ["/parser"]
 

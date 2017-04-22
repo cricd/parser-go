@@ -383,7 +383,7 @@ func main() {
 					}
 					log.Info("Translating events")
 					for k, event := range cses {
-						log.Infof("Translating event %d/%d", k, len(cses)+1)
+						log.Infof("Translating event %d/%d", k+1, len(cses))
 						e, err := translateEvent(event)
 						if err != nil {
 							log.WithFields(log.Fields{"error": err}).Error("Failed to translate event so not processing match")
@@ -409,7 +409,7 @@ func main() {
 					if err != nil {
 						log.WithFields(log.Fields{"error": err}).Error("Failed to remove file")
 					}
-					log.Infof("Successfully processed file %s", file.Name())
+					log.Infof("Finished processing file %s", file.Name())
 				}
 			}
 		}

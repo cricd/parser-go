@@ -1,0 +1,104 @@
+---
+meta:
+  data_version: 0.6
+  created: 2013-02-22
+  revision: 1
+info:
+  city: Auckland
+  dates:
+    - 2005-02-17
+  match_type: T20
+  outcome:
+    by:
+      runs: 44
+    winner: Australia
+  overs: 20
+  player_of_match:
+    - RT Ponting
+  teams:
+    - New Zealand
+    - Australia
+  toss:
+    decision: bat
+    winner: Australia
+  umpires:
+    - BF Bowden
+    - AL Hill
+  venue: Eden Park
+innings:
+  - 1st innings:
+      team: Australia
+      deliveries:
+        - 0.1:
+            batsman: AC Gilchrist
+            bowler: DR Tuffey
+            extras:
+              wides: 1
+            non_striker: MJ Clarke
+            runs:
+              batsman: 0
+              extras: 1
+              total: 1
+        - 0.2:
+            batsman: AC Gilchrist
+            bowler: DR Tuffey
+            extras:
+              legbyes: 1
+            non_striker: MJ Clarke
+            runs:
+              batsman: 0
+              extras: 1
+              total: 1
+        - 0.3:
+            batsman: MJ Clarke
+            bowler: DR Tuffey
+            non_striker: AC Gilchrist
+            runs:
+              batsman: 0
+              extras: 0
+              total: 0
+        - 0.4:
+            batsman: MJ Clarke
+            bowler: DR Tuffey
+            non_striker: AC Gilchrist
+            runs:
+              batsman: 1
+              extras: 0
+              total: 1
+        - 0.5:
+            batsman: AC Gilchrist
+            bowler: DR Tuffey
+            non_striker: MJ Clarke
+            runs:
+              batsman: 1
+              extras: 0
+              total: 1
+        - 0.6:
+            batsman: MJ Clarke
+            bowler: DR Tuffey
+            non_striker: AC Gilchrist
+            runs:
+              batsman: 6
+              extras: 0
+              total: 6
+        - 0.7:
+            batsman: MJ Clarke
+            bowler: DR Tuffey
+            non_striker: AC Gilchrist
+            runs:
+              batsman: 0
+              extras: 0
+              total: 0
+            wicket:
+              fielders:
+                - CD McMillan
+              kind: caught
+              player_out: MJ Clarke
+        - 1.1:
+            batsman: A Symonds
+            bowler: KD Mills
+            non_striker: AC Gilchrist
+            runs:
+              batsman: 0
+              extras: 0
+              total: 0

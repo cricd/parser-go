@@ -23,7 +23,7 @@ import (
 var cricsheetToCricdMap = map[string]string{
 	"bowled":                "bowled",
 	"caught":                "caught",
-	"caught and bowled":     "caught",
+	"caught and bowled":     "caughtAndBowled",
 	"lbw":                   "lbw",
 	"stumped":               "stumped",
 	"run out":               "runOut",
@@ -110,6 +110,7 @@ func translateFielder(c *cricsheet.Event) (name string) {
 		if len(c.Delivery.Wicket.Fielders) > 0 {
 			return c.Delivery.Wicket.Fielders[0]
 		}
+		log.Error("Failed to find fielder for event")
 		// If it's caught and bowled the fielder is the bowler
 	} else if dType == "caughtAndBowled" {
 		return c.Delivery.Bowler
